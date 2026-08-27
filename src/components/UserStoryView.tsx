@@ -48,7 +48,7 @@ export const UserStoryView: React.FC = () => {
     {
       id: 3,
       title: 'The Blind Corner Threat',
-      role: 'Pre-FRIDSS Vulnerability',
+      role: 'Pre-Mine Lander Vulnerability',
       location: 'Zone 3 — Hilltop Ascent',
       description:
         'Raman cannot see oncoming vehicles rounding the switchback bend or clearly judge road grade. Another dumper (D-02) slowed down due to a rockfall ahead, creating an imminent collision trap in the zero-visibility fog.',
@@ -59,11 +59,11 @@ export const UserStoryView: React.FC = () => {
     },
     {
       id: 4,
-      title: 'FRIDSS Intelligent Safety System Active',
+      title: 'Mine Lander Intelligent Safety System Active',
       role: 'Autonomous Detection & Sensor Fusion',
       location: 'Onboard DUMPER-03 (D-089)',
       description:
-        'Raman’s dumper is equipped with FRIDSS: an AI vision camera running fog-penetration YOLO models, high-frequency mmWave radar penetrating water vapor, 6-axis IMU slope sensors, and 5.9 GHz V2V radio mesh.',
+        'Raman’s dumper is equipped with Mine Lander: an AI vision camera running fog-penetration YOLO models, high-frequency mmWave radar penetrating water vapor, 6-axis IMU slope sensors, and 5.9 GHz V2V radio mesh.',
       badge: 'AI DEFENSE LAYER',
       badgeColor: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
       icon: <Radio className="w-8 h-8 text-emerald-400" />,
@@ -199,7 +199,7 @@ export const UserStoryView: React.FC = () => {
           </div>
         </div>
 
-        {/* Side Comparison: Without FRIDSS vs With FRIDSS */}
+        {/* Side Comparison: Without Mine Lander vs With Mine Lander */}
         <div className="lg:col-span-4 space-y-4">
           <div className="bg-[#120808] border border-red-900/50 rounded-xl p-4">
             <div className="flex items-center gap-2 text-red-400 font-bold text-xs font-mono uppercase mb-2">
@@ -214,7 +214,7 @@ export const UserStoryView: React.FC = () => {
 
           <div className="bg-[#051614] border border-emerald-900/50 rounded-xl p-4">
             <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs font-mono uppercase mb-2">
-              <ShieldCheck className="w-4 h-4" /> With FRIDSS Active (Zero Accidents)
+              <ShieldCheck className="w-4 h-4" /> With Mine Lander Active (Zero Accidents)
             </div>
             <ul className="text-xs font-mono text-slate-300 space-y-2">
               <li className="text-emerald-200/80">• YOLO + mmWave radar detection penetrates monsoon fog at 100m+</li>

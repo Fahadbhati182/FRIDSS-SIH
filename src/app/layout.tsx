@@ -3,9 +3,9 @@ import './globals.css';
 import { SimulationProvider } from '@/context/SimulationContext';
 
 export const metadata: Metadata = {
-  title: 'FRIDSS Control Center | Mining Safety & Fleet Risk Detection',
+  title: 'Mine Lander Control Center | Mining Safety & Fleet Risk Detection',
   description:
-    'Fleet Risk & Intelligent Detection Safety System (FRIDSS) for low visibility open-cast mine haul roads. Autonomous collision avoidance, V2V telemetry, and sensor fusion.',
+    'Mine Lander - Mining Safety & Fleet Risk Detection System for low visibility open-cast mine haul roads. Autonomous collision avoidance, V2V telemetry, and sensor fusion.',
 };
 
 export default function RootLayout({

@@ -49,7 +49,7 @@ export const Header: React.FC = () => {
           </div>
           <div>
             <div className="text-[17px] font-black tracking-widest text-hud-cyan leading-none font-mono">
-              FRIDSS
+              MINE LANDER
             </div>
             <div className="text-[9px] font-semibold tracking-wider text-slate-400 uppercase">
               Control Center

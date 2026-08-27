@@ -48,7 +48,7 @@ export const ArchitectureFlow: React.FC = () => {
         <div>
           <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
             <Cpu className="w-5 h-5 text-hud-cyan" />
-            FRIDSS End-to-End System Architecture & Decision Flow
+            Mine Lander End-to-End System Architecture & Decision Flow
           </h2>
           <p className="text-xs text-slate-400 font-mono mt-1">
             Replicating the 5-Stage Autonomous Detection, Risk Decision Engine, Onboard Execution & Analytics Pipeline

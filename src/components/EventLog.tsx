@@ -27,7 +27,7 @@ export const EventLog: React.FC = () => {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `fridss_event_log_${Date.now()}.csv`);
+    link.setAttribute('download', `minelander_event_log_${Date.now()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -137,10 +137,10 @@ export const EventLog: React.FC = () => {
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-[#0a1520] border border-hud-cyan/50 rounded-xl p-6 max-w-xl w-full font-mono text-slate-300 shadow-2xl relative">
             <h3 className="text-lg font-bold text-hud-cyan mb-2 flex items-center gap-2">
-              <HelpCircle className="w-5 h-5" /> FRIDSS Safety Telemetry Diagnostics
+              <HelpCircle className="w-5 h-5" /> Mine Lander Safety Telemetry Diagnostics
             </h3>
             <p className="text-xs text-slate-400 mb-4">
-              Fleet Risk & Intelligent Detection Safety System (FRIDSS) designed for Bailadila Iron Ore Mines haul road navigation under low visibility / monsoon conditions.
+              Mine Lander Safety & Risk Detection System designed for Bailadila Iron Ore Mines haul road navigation under low visibility / monsoon conditions.
             </p>
             <div className="space-y-2 text-xs">
               <div className="bg-[#050b11] p-2.5 rounded border border-[#172e42]">
