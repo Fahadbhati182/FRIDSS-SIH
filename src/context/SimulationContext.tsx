@@ -363,7 +363,7 @@ export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         if (v.id === vehicleId) {
           return {
             ...v,
-            speed: Math.max(0, v.speed - 10),
+            speed: 0,
             engineBrake: true,
             status: 'critical',
           };
@@ -371,7 +371,7 @@ export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         return v;
       })
     );
-    addLog('CRITICAL', vehicleId, `EMERGENCY BRAKE ENGAGED by Control Operator A. Kowalski`);
+    addLog('CRITICAL', vehicleId, `EMERGENCY BRAKE ENGAGED by Control Operator. Vehicle halted.`);
 
     // Notify Python Flask Backend (which commands ESP32 hardware)
     fetch('http://localhost:5000/api/emergency-brake', {
@@ -389,7 +389,7 @@ export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         if (v.id === vehicleId) {
           return {
             ...v,
-            speed: 22,
+            speed: 24,
             engineBrake: false,
             status: 'safe',
           };
@@ -478,6 +478,15 @@ export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           // If this vehicle is currently receiving live hardware data, preserve live readings
           if (liveVehicleIds.includes(v.id)) {
             return v;
+          }
+
+          // If emergency brake is engaged on this vehicle, keep it completely halted
+          if (v.engineBrake) {
+            return {
+              ...v,
+              speed: 0,
+              status: 'critical',
+            };
           }
 
           // Progress speed delta
