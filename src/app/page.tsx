@@ -36,7 +36,7 @@ export default function Home() {
             <LiveMap />
 
             {/* Right Side Tactical HUD Panels */}
-            <div className="w-[380px] xl:w-[420px] bg-[#070e16] flex flex-col h-full overflow-hidden border-l border-[#142330]">
+            <div className="w-[380px] xl:w-[420px] bg-[#070e16] flex flex-col h-full overflow-y-auto border-l border-[#142330]">
               {/* Top: CCTV AI Vision Panel */}
               <AIVisionCCTV />
 
@@ -68,7 +68,7 @@ export default function Home() {
       </div>
 
       {/* Persistent Bottom System Event Log */}
-      {activeTab !== 'event-log' && <EventLog />}
+      {/* {activeTab !== 'event-log' && <EventLog />} */}
     </div>
   );
 }

@@ -23,12 +23,14 @@ interface SimulationContextType {
   systemTime: string;
   systemDate: string;
   triggerEmergencyBrake: (vehicleId: string) => void;
+  releaseEmergencyBrake: (vehicleId: string) => void;
   applyScenario: (scenario: 'nominal' | 'fog_surge' | 'collision_risk' | 'slope_hazard') => void;
   addLog: (severity: 'CRITICAL' | 'WARNING' | 'INFO', vehicleId: string, message: string) => void;
   aiFogFilterActive: boolean;
   setAiFogFilterActive: (active: boolean) => void;
   cctvPreset: 'CAM-03 HILLTOP' | 'CAM-01 PIT ENTRY' | 'CAM-05 BEND APEX';
   setCctvPreset: (preset: 'CAM-03 HILLTOP' | 'CAM-01 PIT ENTRY' | 'CAM-05 BEND APEX') => void;
+  isLiveHardware: boolean;
 }
 
 const initialVehicles: VehicleTelemetry[] = [
@@ -198,6 +200,7 @@ const initialLogs: EventLogEntry[] = [
   },
 ];
 
+// You can fetch this from REST API if not taken via sensors 
 const initialWeather: WeatherTelemetry = {
   humidity: 73,
   temperature: 8.4,
@@ -225,6 +228,96 @@ export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const [systemTime, setSystemTime] = useState<string>('17:31:31');
   const [systemDate, setSystemDate] = useState<string>('27 AUG 2026');
+  const [isLiveHardware, setIsLiveHardware] = useState<boolean>(false);
+  const [liveVehicleIds, setLiveVehicleIds] = useState<string[]>([]);
+
+  // Fetch real-time live meteorological data for Bailadila Mining Complex (Lat: 18.664, Lon: 81.256, Elev: 648m)
+  const fetchBailadilaWeather = useCallback(async () => {
+    try {
+      const url = 'https://api.open-meteo.com/v1/forecast?latitude=18.664&longitude=81.256&current=temperature_2m,relative_humidity_2m,visibility,wind_speed_10m,weather_code,rain';
+      const res = await fetch(url);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data && data.current) {
+        const cur = data.current;
+        const humidity = Math.round(Number(cur.relative_humidity_2m)) || 88;
+        const temp = Number(cur.temperature_2m) || 21.5;
+        const wind = Number(cur.wind_speed_10m) || 5.2;
+        const rain = Number(cur.rain) || 0.0;
+
+        // Hilltop fog visibility calculation for Bailadila haul road (Elevation 648m):
+        // In high humidity / monsoon conditions, hilltop cloud immersion reduces visibility down to 3-12m
+        let visMeters = 35.0;
+        if (humidity > 90) {
+          visMeters = Math.max(3.5, Math.min(9.5, 42.0 - (humidity * 0.38)));
+        } else if (humidity > 75) {
+          visMeters = Math.max(8.0, Math.min(22.0, 50.0 - (humidity * 0.35)));
+        }
+
+        const vhi = Math.min(100, Math.max(0, Math.round((humidity * 0.4) + (Math.max(0, 50 - visMeters) * 0.8))));
+
+        setWeather({
+          humidity,
+          temperature: Number(temp.toFixed(1)),
+          visibility: Number(visMeters.toFixed(1)),
+          vhi,
+          condition: humidity > 80 ? 'MONSOON_FOG' : 'CLEAR',
+          windSpeed: Number(wind.toFixed(1)),
+          rainIntensity: Number(rain.toFixed(1)),
+        });
+      }
+    } catch {
+      // Fallback handled gracefully
+    }
+  }, []);
+
+  // Fetch on mount & refresh every 60 seconds
+  useEffect(() => {
+    fetchBailadilaWeather();
+    const weatherTimer = setInterval(fetchBailadilaWeather, 60000);
+    return () => clearInterval(weatherTimer);
+  }, [fetchBailadilaWeather]);
+
+  // Polling /api/telemetry for real-time Python Gateway / Sensor Feed
+  useEffect(() => {
+    const pollInterval = setInterval(async () => {
+      try {
+        const res = await fetch('/api/telemetry');
+        if (!res.ok) return;
+        const data = await res.json();
+
+        if (data.isLive && data.vehicles && data.vehicles.length > 0) {
+          setIsLiveHardware(true);
+          const activeIds = data.vehicles.map((v: Partial<VehicleTelemetry>) => v.id);
+          setLiveVehicleIds(activeIds);
+
+          setVehicles((prev) => {
+            const liveMap = new Map(data.vehicles.map((v: Partial<VehicleTelemetry>) => [v.id, v]));
+            return prev.map((v) => {
+              const live = liveMap.get(v.id);
+              if (!live) return v;
+              return {
+                ...v,
+                ...live,
+              };
+            });
+          });
+
+          if (data.weather) {
+            setWeather((w) => ({ ...w, ...data.weather }));
+          }
+        } else {
+          setIsLiveHardware(false);
+          setLiveVehicleIds([]);
+        }
+      } catch {
+        // Quietly handle network blip in local dev
+        setIsLiveHardware(false);
+      }
+    }, 250);
+
+    return () => clearInterval(pollInterval);
+  }, []);
 
   // Clock sync
   useEffect(() => {
@@ -279,6 +372,39 @@ export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       })
     );
     addLog('CRITICAL', vehicleId, `EMERGENCY BRAKE ENGAGED by Control Operator A. Kowalski`);
+
+    // Notify Python Flask Backend (which commands ESP32 hardware)
+    fetch('http://localhost:5000/api/emergency-brake', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ vehicleId }),
+    }).catch(() => {
+      // Backend may be running on a different port or offline; graceful fallback
+    });
+  }, [addLog]);
+
+  const releaseEmergencyBrake = useCallback((vehicleId: string) => {
+    setVehicles((prev) =>
+      prev.map((v) => {
+        if (v.id === vehicleId) {
+          return {
+            ...v,
+            speed: 22,
+            engineBrake: false,
+            status: 'safe',
+          };
+        }
+        return v;
+      })
+    );
+    addLog('INFO', vehicleId, `Emergency brake RELEASED. Resuming nominal haul road transit.`);
+
+    // Notify Python Flask Backend
+    fetch('http://localhost:5000/api/emergency-brake', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ vehicleId, release: true }),
+    }).catch(() => {});
   }, [addLog]);
 
   const applyScenario = useCallback((scenario: 'nominal' | 'fog_surge' | 'collision_risk' | 'slope_hazard') => {
@@ -349,6 +475,11 @@ export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const interval = setInterval(() => {
       setVehicles((prevVehicles) => {
         return prevVehicles.map((v) => {
+          // If this vehicle is currently receiving live hardware data, preserve live readings
+          if (liveVehicleIds.includes(v.id)) {
+            return v;
+          }
+
           // Progress speed delta
           const baseStep = (v.speed / 3600) * 0.15 * simSpeed;
           let newProgress = v.pathProgress + (v.direction === 1 ? baseStep : -baseStep);
@@ -367,30 +498,30 @@ export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           const slopeVal = inFogZone ? 6.0 + Math.sin(newProgress * 15) * 2.8 : 2.0 + Math.sin(newProgress * 10) * 1.5;
           const headingVal = Math.floor(40 + newProgress * 80 + Math.sin(newProgress * 12) * 25);
 
-          // Calculate distance to nearest vehicle ahead
+          // Calculate distance and TTC to the nearest other vehicle on the haul road
           let distObs = 85.0;
-          let relVel = 0.3;
-          let calculatedTtc = 18.4;
+          let relVel = 0.5;
+          let calculatedTtc = 35.0;
           let newStatus: 'safe' | 'warning' | 'critical' = 'safe';
 
-          if (v.id === 'D-02') {
-            const d3 = prevVehicles.find((x) => x.id === 'D-03');
-            if (d3) {
-              const diff = Math.abs(d3.pathProgress - newProgress) * 300; // rough meters along curve
-              distObs = Math.max(7.5, Number(diff.toFixed(1)));
-              relVel = Math.abs(v.speed - d3.speed) / 3.6;
-              calculatedTtc = relVel > 0.1 ? Number((distObs / relVel).toFixed(1)) : 99.9;
-              newStatus = distObs < 15 || calculatedTtc < 6 ? 'warning' : 'safe';
-            }
-          } else if (v.id === 'D-03') {
-            const d2 = prevVehicles.find((x) => x.id === 'D-02');
-            if (d2) {
-              const diff = Math.abs(newProgress - d2.pathProgress) * 300;
-              distObs = Math.max(6.2, Number(diff.toFixed(1)));
-              relVel = Math.max(0.5, Math.abs(v.speed - d2.speed) / 3.6 + 1.2);
-              calculatedTtc = Number((distObs / relVel).toFixed(1));
-              newStatus = calculatedTtc < 4.0 || distObs < 12 ? 'critical' : 'warning';
-            }
+          const closestOther = prevVehicles
+            .filter((other) => other.id !== v.id)
+            .map((other) => ({
+              vehicle: other,
+              diffMeters: Math.abs(newProgress - other.pathProgress) * 300,
+            }))
+            .sort((a, b) => a.diffMeters - b.diffMeters)[0];
+
+          if (closestOther) {
+            const other = closestOther.vehicle;
+            distObs = Math.max(4.5, Number(closestOther.diffMeters.toFixed(1)));
+            relVel = Math.max(0.4, Number((Math.abs(v.speed - other.speed) / 3.6 + 0.5).toFixed(1)));
+            calculatedTtc = Number((distObs / relVel).toFixed(1));
+            newStatus = (calculatedTtc < 4.0 || distObs < 10.0) 
+              ? 'critical' 
+              : (calculatedTtc <= 8.0 || distObs < 25.0) 
+              ? 'warning' 
+              : 'safe';
           }
 
           return {
@@ -408,7 +539,7 @@ export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }, 150);
 
     return () => clearInterval(interval);
-  }, [isPlaying, simSpeed]);
+  }, [isPlaying, simSpeed, liveVehicleIds]);
 
   const selectedVehicle = vehicles.find((v) => v.id === selectedVehicleId) || vehicles[0];
 
@@ -433,12 +564,14 @@ export const SimulationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         systemTime,
         systemDate,
         triggerEmergencyBrake,
+        releaseEmergencyBrake,
         applyScenario,
         addLog,
         aiFogFilterActive,
         setAiFogFilterActive,
         cctvPreset,
         setCctvPreset,
+        isLiveHardware,
       }}
     >
       {children}

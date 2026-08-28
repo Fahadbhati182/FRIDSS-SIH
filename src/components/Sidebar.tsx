@@ -2,15 +2,15 @@
 
 import React from 'react';
 import { useSimulation } from '@/context/SimulationContext';
-import { 
-  Map, 
-  Truck, 
-  Camera, 
-  Radio, 
-  FileText, 
-  FileBarChart, 
-  GitFork, 
-  BookOpen, 
+import {
+  Map,
+  Truck,
+  Camera,
+  Radio,
+  FileText,
+  FileBarChart,
+  GitFork,
+  BookOpen,
   ChevronRight,
   ShieldCheck
 } from 'lucide-react';
@@ -26,9 +26,9 @@ export const Sidebar: React.FC = () => {
     { id: 'cctv-feed', label: 'CCTV / AI Feed', icon: <Camera className="w-4 h-4" /> },
     { id: 'rfid-zones', label: 'RFID Zones', icon: <Radio className="w-4 h-4" /> },
     { id: 'event-log', label: 'Event Log', icon: <FileText className="w-4 h-4" /> },
-    { id: 'reports', label: 'Reports', icon: <FileBarChart className="w-4 h-4" /> },
-    { id: 'architecture', label: 'System Architecture', icon: <GitFork className="w-4 h-4 text-cyan-400" /> },
-    { id: 'user-story', label: 'Bailadila Story', icon: <BookOpen className="w-4 h-4 text-amber-400" /> },
+    // { id: 'reports', label: 'Reports', icon: <FileBarChart className="w-4 h-4" /> },
+    // { id: 'architecture', label: 'System Architecture', icon: <GitFork className="w-4 h-4 text-cyan-400" /> },
+    // { id: 'user-story', label: 'Bailadila Story', icon: <BookOpen className="w-4 h-4 text-amber-400" /> },
   ];
 
   return (
@@ -54,11 +54,10 @@ export const Sidebar: React.FC = () => {
                   setActiveTab(item.id);
                   soundFx.playClick();
                 }}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded text-xs font-semibold tracking-wide transition-all ${
-                  isActive
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded text-xs font-semibold tracking-wide transition-all ${isActive
                     ? 'bg-gradient-to-r from-hud-cyan/20 to-transparent border-l-2 border-hud-cyan text-hud-cyan shadow-sm font-bold'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-[#0c1822]'
-                }`}
+                  }`}
               >
                 <div className="flex items-center gap-3">
                   <span className={isActive ? 'text-hud-cyan glow-text-cyan' : 'text-slate-400'}>
